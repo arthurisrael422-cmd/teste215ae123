@@ -204,3 +204,6 @@ set_global_assignment -name VERILOG_FILE "codigo/FPGA_OV7670_Camera_Interface-ma
 set_global_assignment -name VERILOG_FILE pll_sdram.v
 set_global_assignment -name VERILOG_FILE meu_pll.v
 set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top
+
+set_instance_assignment -name WEAK_PULL_UP_RESISTOR ON -to ov7670_siod
+set_instance_assignment -name WEAK_PULL_UP_RESISTOR ON -to ov7670_sioc
