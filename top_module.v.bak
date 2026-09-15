@@ -3,7 +3,6 @@
 // ============================================================================
 // Top Module: Interface Câmera OV7670 -> SDRAM -> VGA (Terasic DE2-115)
 // FPGA: Altera Cyclone IV E (EP4CE115F29C7)
-// Versão: v2 (Com conexão do clock da SDRAM c1 com -3.0ns Phase Shift)
 // ============================================================================
 
 module top_module(
@@ -30,7 +29,7 @@ module top_module(
     // ------------------------------------------------------------------------
     // Interface da Memória SDRAM (Placa DE2-115)
     // ------------------------------------------------------------------------
-    output wire        DRAM_CLK,    // Clock da SDRAM (165 MHz com -3ns Phase Shift)
+    output wire        DRAM_CLK,    // Clock da SDRAM (165 MHz)
     output wire        DRAM_CKE,    // Clock Enable
     output wire        DRAM_CS_N,   // Chip Select
     output wire        DRAM_RAS_N,  // Row Address Strobe
@@ -57,23 +56,21 @@ module top_module(
     // ========================================================================
     // Sinais Internos e Barramentos Intermediários
     // ========================================================================
-    wire clk_sdram;      // Clock de 165 MHz para a lógica interna do controlador SDRAM
-    wire sdram_clk_out;  // Clock de 165 MHz com -3.0ns Phase Shift para o pino físico DRAM_CLK
-    wire clk_vga;        // Clock de 25 MHz para sincronismo VGA (640x480 @ 60Hz)
-    
-    wire f2s_data_valid; // Sinal de validação dos dados da câmera para a SDRAM
+    wire clk_sdram;         // Clock de 165 MHz para a lógica da SDRAM
+    wire clk_vga;           // Clock de 25 MHz para sincronismo VGA (640x480 @ 60Hz)
+    wire f2s_data_valid;    // Sinal de validação dos dados da câmera para a SDRAM
     wire [9:0]  data_count_r;
-    wire [15:0] dout;    // Dados lidos do FIFO da câmera
-    wire [15:0] din;     // Dados a serem enviados para o FIFO do VGA
-    wire empty_fifo;     // Indicador de FIFO de saída vazio
-    wire rd_en;          // Sinal de leitura do FIFO do VGA
+    wire [15:0] dout;       // Dados lidos do FIFO da câmera
+    wire [15:0] din;        // Dados a serem enviados para o FIFO do VGA
+    wire empty_fifo;        // Indicador de FIFO de saída vazio
+    wire rd_en;             // Sinal de leitura do FIFO do VGA
     
     // Sinais temporários de cor RGB 5:6:5 do núcleo VGA
     wire [4:0] vga_out_r;
     wire [5:0] vga_out_g;
     wire [4:0] vga_out_b;
-    wire vga_out_vs;
-    wire vga_out_hs;
+    wire       vga_out_vs;
+    wire       vga_out_hs;
 
     // ========================================================================
     // Instanciação dos Geradores de Clock (ALTPLL - Altera IP)
@@ -86,18 +83,18 @@ module top_module(
         .c1     ( clk_vga )
     );
 
-    // PLL 2: Gera 165 MHz para a Memória SDRAM (c0 = interno, c1 = -3ns phase shift)
+    // PLL 2: Gera 165 MHz para a Memória SDRAM (com fase ajustada)
     pll_sdram m4 (
         .inclk0 ( CLOCK_50 ),
         .areset ( ~rst_n ),
-        .c0     ( clk_sdram ),     // Clock para a lógica interna
-        .c1     ( sdram_clk_out ), // Clock com -3.0ns Phase Shift para o chip físico SDRAM
+        .c0     ( clk_sdram ),
         .locked ()
     );
 
     // ========================================================================
     // Instanciação dos Módulos Principais do Sistema
     // ========================================================================
+    
     // 1. Controle da Câmera OV7670 (Captura de Pixels e I2C/SCCB)
     camera_interface m0 (
         .clk          ( CLOCK_50 ),
@@ -158,12 +155,13 @@ module top_module(
     // ========================================================================
     // Conexões de Saída e Mapeamento para o Hardware da DE2-115
     // ========================================================================
-    // Clock da Memória SDRAM enviado ao pino PIN_AE5 (Com -3.0ns Phase Shift)
-    assign DRAM_CLK = sdram_clk_out;
+    
+    // Clock da Memória SDRAM
+    assign DRAM_CLK = clk_sdram;
 
     // Sinais de Sincronismo VGA
-    assign VGA_VS = vga_out_vs;
-    assign VGA_HS = vga_out_hs;
+    assign VGA_VS  = vga_out_vs;
+    assign VGA_HS  = vga_out_hs;
 
     // Habilitação e Sincronismo do DAC ADV7123 da DE2-115
     assign VGA_CLK     = clk_vga;
